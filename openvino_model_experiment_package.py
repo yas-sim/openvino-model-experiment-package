@@ -13,6 +13,8 @@ from scipy.ndimage.filters import maximum_filter
 
 from openvino.inference_engine import IECore, IENetwork, ExecutableNetwork
 
+#--------------------------------------------------------------------
+
 def load_IR_model(model):
     ie = IECore()
     net = ie.read_network(model+'.xml', model+'.bin')
@@ -107,25 +109,15 @@ def bbox_NMS(bboxes, threshold=0.7):
                 bboxes[j][_prob] = -1
     return bboxes
 
-def draw_bboxes(objs, img, disp_label=True, label_file='voc_labels.txt'):
-    # Read class label text file
-    labels = read_label_text_file(label_file)
-
-    img_h, img_w, _ = img.shape
-    for obj in objs:
-        imgid, clsid, confidence, x1, y1, x2, y2 = obj
-        x1 = int( x1 * img_w )
-        y1 = int( y1 * img_h )
-        x2 = int( x2 * img_w )
-        y2 = int( y2 * img_h )
-        if confidence == -1:
-            continue
-        cv2.rectangle(img, (x1, y1), (x2, y2), (0,255,0), thickness=2 )
-        if len(labels)>0 and disp_label==True:
-            cv2.putText(img, labels[int(clsid)][:-1], (x1, y1), cv2.FONT_HERSHEY_PLAIN, fontScale=4, color=(0,255,255), thickness=2)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    plt.imshow(img)
-    plt.show()
+def hm_nms(hm, kernel_size=3):
+    """
+    Input:
+      heat: CHW
+    """
+    pad = (kernel_size - 1) // 2
+    hmax = np.array([max_pooling(channel, kernel_size, pad) for channel in hm])
+    keep = (hmax == hm)
+    return hm * keep
 
 def detect_peaks(hm, filter_size=3, order=0.5):
     """
@@ -158,15 +150,39 @@ def detect_peaks2(hm, threshold=1.):
     xs = indices %  hm_width
     return (xs, ys)
 
-def hm_nms(hm, kernel_size=3):
-    """
-    Input:
-      heat: CHW
-    """
-    pad = (kernel_size - 1) // 2
-    hmax = np.array([max_pooling(channel, kernel_size, pad) for channel in hm])
-    keep = (hmax == hm)
-    return hm * keep
+#--------------------------------------------------------------------
+
+def display_statistics(data):
+    print('Max {:.2}, Min {:.2}, Mean {:.2}, Var {:.2}'.format(data.max(), data.min(), data.mean(), data.var()))
+
+def display_histogram(d, bins=50, normalize_flg=False):
+    d = d.flatten()
+    if normalize_flg == True:
+        d = omep.normalize(d)
+    fig = plt.figure()
+    ax  = fig.add_subplot(1, 1, 1)
+    ax.hist(d, bins=bins)
+    fig.show()
+
+def display_bboxes(objs, img, disp_label=True, label_file='voc_labels.txt'):
+    # Read class label text file
+    labels = read_label_text_file(label_file)
+
+    img_h, img_w, _ = img.shape
+    for obj in objs:
+        imgid, clsid, confidence, x1, y1, x2, y2 = obj
+        x1 = int( x1 * img_w )
+        y1 = int( y1 * img_h )
+        x2 = int( x2 * img_w )
+        y2 = int( y2 * img_h )
+        if confidence == -1:
+            continue
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0,255,0), thickness=2 )
+        if len(labels)>0 and disp_label==True:
+            cv2.putText(img, labels[int(clsid)][:-1], (x1, y1), cv2.FONT_HERSHEY_PLAIN, fontScale=4, color=(0,255,255), thickness=2)
+    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    plt.imshow(img)
+    plt.show()
 
 def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999, threshold_h=9999, draw_peaks=False, peak_threshold=0.7, statistics=True):
     """
@@ -190,7 +206,7 @@ def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999,
         grid_y = num_channels // max_grid_x + 1
 
     pos=1
-    plt.figure(figsize=(4*grid_x, 4*grid_y))
+    plt.figure(figsize=(8*grid_x, 6*grid_y))
     for ch in range(num_channels):
         _hm = hm[0, ch, :, :]                   # _hm = (H,W)
         _hm_h , _hm_w = _hm.shape
@@ -241,11 +257,6 @@ def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999,
         pos+=1
     plt.show()
 
-def decode_classification_result(res):
-    res = res.flatten()
-    idx = index_sort(res, reverse=True)
-    return idx
-
 def display_classification_result(res, idx, top_k, label_file='synset_words.txt'):
     # Read class label text file
     labels = read_label_text_file(label_file)
@@ -257,6 +268,13 @@ def display_classification_result(res, idx, top_k, label_file='synset_words.txt'
         else:
             print(i+1, idx[i]+1, res[idx[i]], labels[idx[i]][:-1])
 
+#--------------------------------------------------------------------
+
+def decode_classification_result(res):
+    res = res.flatten()
+    idx = index_sort(res, reverse=True)
+    return idx
+
 def decode_ssd_result(res, threshold=0.7):
     res = res.reshape(res.size//7, 7)         # reshape to (x, 7)
     objs = []
@@ -266,20 +284,20 @@ def decode_ssd_result(res, threshold=0.7):
             objs.append([imgid, clsid, confidence, x1, y1, x2, y2])
     return objs
 
-def entry_index(side, coord, classes, location, entry):
-    side_power_2 = side ** 2
-    n = location // side_power_2
-    loc = location % side_power_2
-    return int(side_power_2 * (n * (coord + classes + 1) + entry) + loc)
-
-def scale_bbox(x, y, h, w, class_id, confidence, h_scale, w_scale):
-    xmin = int((x - w / 2) * w_scale)
-    ymin = int((y - h / 2) * h_scale)
-    xmax = int(xmin + w * w_scale)
-    ymax = int(ymin + h * h_scale)
-    return [class_id, confidence, xmin, ymin, xmax, ymax]
-
 def parse_yolo_region(blob, resized_image_shape, params, threshold):
+    def entry_index(side, coord, classes, location, entry):
+        side_power_2 = side ** 2
+        n = location // side_power_2
+        loc = location % side_power_2
+        return int(side_power_2 * (n * (coord + classes + 1) + entry) + loc)
+
+    def scale_bbox(x, y, h, w, class_id, confidence, h_scale, w_scale):
+        xmin = int((x - w / 2) * w_scale)
+        ymin = int((y - h / 2) * h_scale)
+        xmax = int(xmin + w * w_scale)
+        ymax = int(ymin + h * h_scale)
+        return [class_id, confidence, xmin, ymin, xmax, ymax]
+
     param_num     = 3  if 'num'     not in params else int(params['num'])
     param_coords  = 4  if 'coords'  not in params else int(params['coords'])
     param_classes = 80 if 'classes' not in params else int(params['classes'])
