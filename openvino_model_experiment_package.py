@@ -1,5 +1,7 @@
-# OpenVINO Inference Result Processing Tools
-
+"""
+OpenVINO Model Experiment Package
+"""
+import os
 from math import exp
 
 import numpy as np
@@ -16,8 +18,23 @@ from openvino.inference_engine import IECore, IENetwork, ExecutableNetwork
 #--------------------------------------------------------------------
 
 def load_IR_model(model):
+    """
+    Load OpenVINO IR model  
+    Args:
+        model (string): model file path.
+    Returns:
+        ie (IECore object):  
+        net (IENetwork object):  
+        exenet (ExecutableNetwork object):  
+        inblobs ([string,...]):  
+        outblobs ([string,...]):  
+        inshapes ([string,...]):  
+        outshapes ([string,...]):  
+    """
+    base, ext = os.path.splitext(model)
+
     ie = IECore()
-    net = ie.read_network(model+'.xml', model+'.bin')
+    net = ie.read_network(base+'.xml', base+'.bin')
     exenet = ie.load_network(net, 'CPU')
     inblobs =  (list(net.inputs.keys()))
     outblobs = (list(net.outputs.keys()))
@@ -27,11 +44,20 @@ def load_IR_model(model):
     print('Output blobs:', outblobs, outshapes)
     return ie, net, exenet, inblobs, outblobs, inshapes, outshapes
 
-def infer_ocv_image(exenet, inblob_name, image):
+def infer_ocv_image(exenet, image, inblob_name):
+    """
+    Set given image to specified input blob and run inference  
+    Args:
+        exenet (Executablenetwork): execet for the IR model to run
+        image : OpenCV image (BGR, HWC)
+        inblob_name (string): name of the input blob to set the image
+    Returns:
+        res: inference result
+    """
     net=exenet.get_exec_graph_info()      # Obtain IENetwork
     inblob  = list(net.inputs.keys())[0]  # Obtain the name of the 1st input blob
     inshape = net.inputs[inblob].shape
-    
+
     img = cv2.resize(image, (inshape[-1], inshape[-2]))
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = img.transpose((2,0,1))          # HWC -> CHW, packed pixel -> planar
@@ -39,6 +65,13 @@ def infer_ocv_image(exenet, inblob_name, image):
     return res
     
 def read_label_text_file(file):
+    """
+    Read class label text file.  
+    Args:
+        file (string): File name of the label
+    Returns:
+        label ([string]): List of labels
+    """
     try:
         label = open(file).readlines()
     except OSError as e:
@@ -47,33 +80,52 @@ def read_label_text_file(file):
 
 #--------------------------------------------------------------------
 
-def normalize(data):
-    return (data-data.min())/(data.max()-data.min())    # Normalize (0.0-1.0)
+def normalize(x):
+    """
+    Normalize input data.
+    Args:
+        x (NDarray):
+    Returns:
+        Normalized NDarray
+    """
+    return (x-x.min())/(x.max()-x.min())    # Normalize (0.0-1.0)
 
 def softmax(x):
+    """
+    Calculate softmax of the input data  
+    Args:
+        x (NDarray):
+    Returns:
+        softmax result
+    """
     u = np.sum(np.exp(x))
     return np.exp(x)/u
 
-def max_pooling(A, kernel_size, stride=1, padding=1):
+def max_pooling(x, kernel_size, stride=1, padding=1):
     """
-    Inputs:
-      A: HW array
+    Perform max pooling  
+    Args:
+        x: NDarray (HW)
+    Returns:
+        max pooling result
     """
-    A = np.pad(A, padding, mode='constant')
-    output_shape = ((A.shape[0] - kernel_size)//stride + 1,
-                    (A.shape[1] - kernel_size)//stride + 1)
+    x = np.pad(x, padding, mode='constant')
+    output_shape = ((x.shape[0] - kernel_size)//stride + 1,
+                    (x.shape[1] - kernel_size)//stride + 1)
     kernel_size = (kernel_size, kernel_size)
-    A_w = as_strided(A, shape=output_shape + kernel_size, strides=(stride*A.strides[0], stride*A.strides[1]) + A.strides)
-    A_w = A_w.reshape(-1, *kernel_size)
+    x_w = as_strided(x, shape=output_shape + kernel_size, strides=(stride*x.strides[0], stride*x.strides[1]) + x.strides)
+    x_w = x_w.reshape(-1, *kernel_size)
 
-    return A_w.max(axis=(1, 2)).reshape(output_shape)
+    return x_w.max(axis=(1, 2)).reshape(output_shape)
 
 def index_sort(nparray, reverse=False):
     """
-    Inputs:
-      reverse: Sort order, True=Large->Small, False=Small->Large
-    Return:
-      idx: List of index to the original array
+    Perform sort and returns the sorted index.
+    Input data won't be modified.
+    Args:
+        reverse: Sort order, True=Large->Small, False=Small->Large
+    Returns:
+        idx: List of index to the original array
     """
     idx = np.argsort(nparray)
     if reverse:
@@ -84,6 +136,15 @@ def index_sort(nparray, reverse=False):
 #--------------------------------------------------------------------
 
 def bbox_IOU(bbox1, bbox2):
+    """
+    Calculate IOU of 2 bboxes. bboxes are in SSD format (7 elements)  
+    bbox = [id, cls, prob, x1, y1, x2, y2]  
+    Args:
+        bbox1 (bbox):
+        bbox2 (bbox):
+    Returns:
+        IOU value
+    """
     _xmin, _ymin, _xmax, _ymax = 3, 4, 5, 6
     width_of_overlap_area  = min(bbox1[_xmax], bbox2[_xmax]) - max(bbox1[_xmin], bbox2[_xmin])
     height_of_overlap_area = min(bbox1[_ymax], bbox2[_ymax]) - max(bbox1[_ymin], bbox2[_ymin])
@@ -99,6 +160,15 @@ def bbox_IOU(bbox1, bbox2):
     return area_of_overlap / area_of_union
 
 def bbox_NMS(bboxes, threshold=0.7):
+    """
+    Perform non maximum suppression for bboxes to reject redundunt detections.  
+    bbox = [id, cls, prob, x1, y1, x2, y2]  
+    Args:
+        bboxes ([bbox,...]):
+        threshold (int): Threshold value of rejection
+    Returns:
+        NMS applied bboxes
+    """
     _clsid, _prob = 1, 2
     bboxes = sorted(bboxes, key=lambda x: x[_prob], reverse=True)
     for i in range(len(bboxes)):
@@ -111,8 +181,12 @@ def bbox_NMS(bboxes, threshold=0.7):
 
 def hm_nms(hm, kernel_size=3):
     """
-    Input:
-      heat: CHW
+    Perform non maximum suppression for a heatmap.  
+    Args:
+        heat (ndarray, CHW): input heatmap
+        kernel_size (int): kernel size
+    Returns:
+        NMS applied heatmap
     """
     pad = (kernel_size - 1) // 2
     hmax = np.array([max_pooling(channel, kernel_size, pad) for channel in hm])
@@ -121,8 +195,13 @@ def hm_nms(hm, kernel_size=3):
 
 def detect_peaks(hm, filter_size=3, order=0.5):
     """
-    Inputs:
-     hm: HW
+    Detect peaks from a heatmap.
+    Args:
+        hm (ndarray, HW): input heatmap
+        filter_size (int): kernel size
+        order (float): 
+    Returns:
+        List of detected peaks [[x0, x1, ..], [y0, y1, ..]]
     """
     local_max = maximum_filter(hm, footprint=np.ones((filter_size, filter_size)), mode='constant')
     detected_peaks = np.ma.array(hm, mask=~(hm == local_max))
@@ -133,8 +212,12 @@ def detect_peaks(hm, filter_size=3, order=0.5):
 
 def detect_peaks2(hm, threshold=1.):
     """
-    Inputs:
-     hm: HW
+    Detect peaks from a heatmap.
+    Args:
+        hm (ndarray, HW): input heatmap
+        threshold (float): threshold value for peak detection
+    Returns:
+        List of detected peaks ([x0, x1, ..], [y0, y1, ..])
     """
     hm_pool = max_pooling(hm, 3, 1, 1)
     interest_points = ((hm==hm_pool) * hm)             # screen out low-conf pixels
@@ -184,11 +267,12 @@ def display_bboxes(objs, img, disp_label=True, label_file='voc_labels.txt'):
     plt.imshow(img)
     plt.show()
 
-def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999, threshold_h=9999, draw_peaks=False, peak_threshold=0.7, statistics=True):
+def display_heatmap(hm, overlay_img=None, col_max=4, normalize_flg=True, threshold_l=-9999, threshold_h=9999, draw_peaks=False, peak_threshold=0.7, statistics=True):
     """
     input:
       hm            : Heatmap in NCHW format
       overlay_img   : (optional) OpenCV image to display with the heatmap
+      col_max (int) : number of heatmaps in a row
       normalize     : True = normalize the heatmap (0.0-1.0)
       threahold_l, threshold_h : Low and high threshold value to mark lowlight and highlight region
       draw_peaks    : True = Draw peak points
@@ -196,7 +280,7 @@ def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999,
     """
     num_channels = hm.shape[1]
 
-    max_grid_x = 3
+    max_grid_x = col_max
     
     if num_channels<max_grid_x:
         grid_x = num_channels
@@ -206,7 +290,7 @@ def display_heatmap(hm, overlay_img=None, normalize_flg=True, threshold_l=-9999,
         grid_y = num_channels // max_grid_x + 1
 
     pos=1
-    plt.figure(figsize=(8*grid_x, 6*grid_y))
+    plt.figure(figsize=(4*grid_x, 3*grid_y))
     for ch in range(num_channels):
         _hm = hm[0, ch, :, :]                   # _hm = (H,W)
         _hm_h , _hm_w = _hm.shape

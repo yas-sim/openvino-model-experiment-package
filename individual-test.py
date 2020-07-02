@@ -3,7 +3,7 @@ import cv2
 
 import matplotlib.pyplot as plt
 
-from openvino.inference_engine import IECore, IENetwork, ExecutableNetwork
+from openvino.inference_engine import IECore
 
 import openvino_model_experiment_package as omep
 
@@ -13,7 +13,7 @@ ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(mod
 
 # Load an image and run inference
 img_orig = cv2.imread('people.jpg')
-res = omep.infer_ocv_image(exenet, inblobs[0], img_orig)
+res = omep.infer_ocv_image(exenet, img_orig, inblobs[0])
 
 img = cv2.cvtColor(img_orig, cv2.COLOR_BGR2RGB)
 plt.imshow(img)
