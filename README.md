@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # OpenVINO Model Experiment Package
 
 ## 1. Descriptioin
@@ -84,4 +83,3 @@ Refer to the `omep-jupyter-test.ipynb` (or `openvino_model_experiment_package.py
 ## 5. Tested environment
 - OpenVINO 2020.3 LTS
 - Windows 10 1909
->>>>>>> 30366cf235cbf34cd9c88226c087b8fd1e88a90c
