@@ -4,10 +4,10 @@
 This project provides a set of useful functions to manipulate, analyze, display, and understand the inference result from Intel(R) Distribution of OpenVINO(TM) toolkit.  
 The library can be called from an independent Python program or from an Jupyter notebook.  
 The library `openvino_model_experiment_package` (`omep`) includes following functions:
- - OpenVINO simplified API : model loading, image inferencing, label reading
- - Common data processing : normalize, softmax, maxpooling, index sort, BBox NMS, heatmap NMS, Peak detection
- - Data visualize : BBox draw, statistics information, histogram, heatmap, classification reult
- - Model specific data parse : classification, SSD, YOLO, Centernet
+ - **OpenVINO simplified API** : model loading, image inferencing, label reading
+ - **Common data processing** : normalize, softmax, maxpooling, index sort, BBox NMS, heatmap NMS, Peak detection
+ - **Data visualize** : BBox draw, statistics information, histogram, heatmap, classification reult
+ - **Model specific data parse** : classification, SSD, YOLO, Centernet
 
 ## 2. Example of output
 
