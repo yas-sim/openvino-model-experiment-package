@@ -89,7 +89,6 @@ omep.display_heatmap(res['Mconv7_stage2_L2'], overlay_img=img_orig, statistics=F
 ![heatmap-humanpose](./resources/heatmap-humanpose.png)  
 
 **Histogram**  
-![histogram](./resources/histogram.png)  
 ```python
 import openvino_model_experiment_package as omep
 import cv2
@@ -100,6 +99,7 @@ res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
 hm = res[outblobs[2]]
 omep.display_histogram(hm, normalize_flg=False)
 ```
+![histogram](./resources/histogram.png)  
 
 ## 3. How to use
 Place the `openvino_model_experiment_package.py` to the same directory as the Python project and import it.  
