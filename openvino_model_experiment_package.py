@@ -49,8 +49,8 @@ def infer_ocv_image(exenet, image, inblob_name):
     Set given image to specified input blob and run inference  
     Args:
         exenet (Executablenetwork): execet for the IR model to run
-        image : OpenCV image (BGR, HWC)
-        inblob_name (string): name of the input blob to set the image
+        image                     : OpenCV image (BGR, HWC)
+        inblob_name (string)      : name of the input blob to set the image
     Returns:
         res: inference result
     """
@@ -82,7 +82,7 @@ def read_label_text_file(file):
 
 def normalize(x):
     """
-    Normalize input data.
+    Normalize input data.  
     Args:
         x (NDarray):
     Returns:
@@ -94,7 +94,7 @@ def softmax(x):
     """
     Calculate softmax of the input data  
     Args:
-        x (NDarray):
+        x (NDarray)
     Returns:
         softmax result
     """
@@ -105,7 +105,7 @@ def max_pooling(x, kernel_size, stride=1, padding=1):
     """
     Perform max pooling  
     Args:
-        x: NDarray (HW)
+        x (ndarray, HW)
     Returns:
         max pooling result
     """
@@ -120,8 +120,8 @@ def max_pooling(x, kernel_size, stride=1, padding=1):
 
 def index_sort(nparray, reverse=False):
     """
-    Perform sort and returns the sorted index.
-    Input data won't be modified.
+    Perform sort and returns the sorted index.  
+    Input data won't be modified.  
     Args:
         reverse: Sort order, True=Large->Small, False=Small->Large
     Returns:
@@ -140,8 +140,8 @@ def bbox_IOU(bbox1, bbox2):
     Calculate IOU of 2 bboxes. bboxes are in SSD format (7 elements)  
     bbox = [id, cls, prob, x1, y1, x2, y2]  
     Args:
-        bbox1 (bbox):
-        bbox2 (bbox):
+        bbox1 (bbox)
+        bbox2 (bbox)
     Returns:
         IOU value
     """
@@ -184,7 +184,7 @@ def hm_nms(hm, kernel_size=3):
     Perform non maximum suppression for a heatmap.  
     Args:
         heat (ndarray, CHW): input heatmap
-        kernel_size (int): kernel size
+        kernel_size (int)  : kernel size
     Returns:
         NMS applied heatmap
     """
@@ -195,11 +195,11 @@ def hm_nms(hm, kernel_size=3):
 
 def detect_peaks(hm, filter_size=3, order=0.5):
     """
-    Detect peaks from a heatmap.
+    Detect peaks from a heatmap.  
     Args:
-        hm (ndarray, HW): input heatmap
+        hm (ndarray, HW) : input heatmap
         filter_size (int): kernel size
-        order (float): 
+        order (float) 
     Returns:
         List of detected peaks [[x0, x1, ..], [y0, y1, ..]]
     """
@@ -212,9 +212,9 @@ def detect_peaks(hm, filter_size=3, order=0.5):
 
 def detect_peaks2(hm, threshold=1.):
     """
-    Detect peaks from a heatmap.
+    Detect peaks from a heatmap.  
     Args:
-        hm (ndarray, HW): input heatmap
+        hm (ndarray, HW) : input heatmap
         threshold (float): threshold value for peak detection
     Returns:
         List of detected peaks ([x0, x1, ..], [y0, y1, ..])
@@ -236,18 +236,40 @@ def detect_peaks2(hm, threshold=1.):
 #--------------------------------------------------------------------
 
 def display_statistics(data):
+    """
+    Display *statistics* information of the data.  
+    Args:
+        data (ndarray)
+    Returns:
+        None
+    """
     print('Max {:.2}, Min {:.2}, Mean {:.2}, Var {:.2}'.format(data.max(), data.min(), data.mean(), data.var()))
 
-def display_histogram(d, bins=50, normalize_flg=False):
-    d = d.flatten()
+def display_histogram(data, bins=50, normalize_flg=False):
+    """
+    Display histogram chart. The input data will be flatten and calculate histogram.  
+    Args:
+        data (ndarray)
+    """
+    data = data.flatten()
     if normalize_flg == True:
-        d = omep.normalize(d)
+        data = normalize(data)
     fig = plt.figure()
     ax  = fig.add_subplot(1, 1, 1)
-    ax.hist(d, bins=bins)
+    ax.hist(data, bins=bins)
     fig.show()
 
 def display_bboxes(objs, img, disp_label=True, label_file='voc_labels.txt'):
+    """
+    Display bounding boxes on the input image.  
+    Args:
+        objs (list of bbox) : bbox = [id, clsId, prob, x1, y1, x2, y2 ]
+        img (OCV image)
+        disp_label (bool)   : True=display class label (Default: True)
+        label_file (string) : Label text file name
+    Returns:
+        None
+    """
     # Read class label text file
     labels = read_label_text_file(label_file)
 
@@ -269,14 +291,18 @@ def display_bboxes(objs, img, disp_label=True, label_file='voc_labels.txt'):
 
 def display_heatmap(hm, overlay_img=None, col_max=4, normalize_flg=True, threshold_l=-9999, threshold_h=9999, draw_peaks=False, peak_threshold=0.7, statistics=True):
     """
-    input:
-      hm            : Heatmap in NCHW format
-      overlay_img   : (optional) OpenCV image to display with the heatmap
-      col_max (int) : number of heatmaps in a row
-      normalize     : True = normalize the heatmap (0.0-1.0)
-      threahold_l, threshold_h : Low and high threshold value to mark lowlight and highlight region
-      draw_peaks    : True = Draw peak points
-      peak_treshold : Threshold value to detect peaks
+    Diaplay heatmap.  
+    Args:
+        hm (ndarray)         : Heatmap in NCHW format
+        overlay_img          : (optional) OpenCV image to display with the heatmap
+        col_max (int)        : number of heatmaps in a row
+        normalize_flg (bool) : True = normalize the heatmap (0.0-1.0)
+        threahold_l, threshold_h (float) : Low and high threshold value to mark lowlight and highlight region
+        draw_peaks (bool)    : True = Draw peak points
+        peak_treshold (float): Threshold value to detect peaks
+        statistics (bool)    : True = display statistics information of the heatmap data
+    Returns:
+        None
     """
     num_channels = hm.shape[1]
 
@@ -342,6 +368,16 @@ def display_heatmap(hm, overlay_img=None, col_max=4, normalize_flg=True, thresho
     plt.show()
 
 def display_classification_result(res, idx, top_k, label_file='synset_words.txt'):
+    """
+    Display classification result.  
+    Args:
+        res : Image classification inference result from infer() API. This includes the probability of the classes.
+        idx : Sorted index number to the probability array.
+        top_k (int): Number of top results to display.
+        label_file (string): Label text file name. (default: 'synset_words.txt', optional)
+    Returns:
+        None
+    """
     # Read class label text file
     labels = read_label_text_file(label_file)
 
@@ -355,11 +391,25 @@ def display_classification_result(res, idx, top_k, label_file='synset_words.txt'
 #--------------------------------------------------------------------
 
 def decode_classification_result(res):
+    """
+    Decode classification result.  
+    Args:
+        res: Image classification result from infer() API. This includes the probability of the classes.
+    Returns:
+        idx (list(int)): Sorted index number to the probability array.
+    """
     res = res.flatten()
     idx = index_sort(res, reverse=True)
     return idx
 
 def decode_ssd_result(res, threshold=0.7):
+    """
+    Decode SSD rsult.  
+    Args:
+        res: SSD inference result from infer() API. This includes the probability of the classes.
+    Returns:
+        objs ([bbox]): bbox = [id, clsId, prob, x1, y1, x2, y2]
+    """
     res = res.reshape(res.size//7, 7)         # reshape to (x, 7)
     objs = []
     for obj in res:
@@ -369,6 +419,16 @@ def decode_ssd_result(res, threshold=0.7):
     return objs
 
 def parse_yolo_region(blob, resized_image_shape, params, threshold):
+    """
+    Parse YOLO region. This function is intented to be called from decode_yolo_result().
+    Args:
+        blob               : An output blob of YOLO model inference result (one blob only).
+        resized_image_shape: Shape information of the resized input image.
+        params (dict)      : YOLO parameters to decode the result
+        threshold (float)  : Threshold value for object rejection
+    Returns:
+        objs ([bbox]): bbox = [id, clsId, prob, x1, y1, x2, y2]
+    """
     def entry_index(side, coord, classes, location, entry):
         side_power_2 = side ** 2
         n = location // side_power_2
@@ -435,6 +495,16 @@ def parse_yolo_region(blob, resized_image_shape, params, threshold):
     return objects
 
 def decode_yolo_result(res, net, inshapes, threshold):
+    """
+    Decode YOLO inference result.  
+    Args:
+        res                : YOLO inference result from infer() API. This includes the probability of the classes.
+        net (IENetwork obj):
+        inshapes           : Input blob shape information (list)
+        threshold (float)  : Threshold value for object rejection
+    Returns:
+        objs ([bbox]): bbox = [id, clsId, prob, x1, y1, x2, y2]
+    """
     objects=[]
     for layer_name in res:
         out_blob = res[layer_name]
@@ -445,9 +515,13 @@ def decode_yolo_result(res, net, inshapes, threshold):
 
 def decode_centernet(hm, dp1, dp2, threshold=0.7):
     """
-    Inputs:
-    hm: Heatmap
-    dp1, dp2: Displacement map
+    Decode Centernet inference result.  
+    Args:
+        hm      : Heatmap
+        dp1, dp2: Displacement map
+        threshold (float)  : Threshold value for object rejection
+    Returns:
+        objs ([bbox]): bbox = [id, clsId, prob, x1, y1, x2, y2]
     """
     hm = hm[0]
     hm_h, hm_w = hm.shape[-2:]
