@@ -15,7 +15,7 @@ The library `openvino_model_experiment_package` (`omep`) includes following func
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'public/mobilenet-ssd/FP16/mobilenet-ssd'
+model = 'public/mobilenet-ssd/FP16/mobilenet-ssd.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('car_1.bmp')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0])   # Inference
@@ -28,7 +28,7 @@ omep.display_bboxes(objs, img_orig)
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'dbface-vga/dbface'
+model = 'dbface-vga/dbface.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('selfie.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
@@ -41,7 +41,7 @@ omep.display_heatmap(hm)
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'dbface-vga/dbface'
+model = 'dbface-vga/dbface.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('selfie.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
@@ -54,7 +54,7 @@ omep.display_heatmap(hm, overlay_img=img_orig)
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'dbface-vga/dbface'
+model = 'dbface-vga/dbface.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('selfie.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
@@ -67,7 +67,7 @@ omep.display_heatmap(hm, normalize_flg=True, threshold_l=0.02, threshold_h=0.5)
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'dbface-vga/dbface'
+model = 'dbface-vga/dbface.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('selfie.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
@@ -80,7 +80,7 @@ omep.display_heatmap(hm, overlay_img=img_orig, normalize_flg=True, draw_peaks=Tr
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'intel/human-pose-estimation-0001/FP16/human-pose-estimation-0001'
+model = 'intel/human-pose-estimation-0001/FP16/human-pose-estimation-0001.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('people.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
@@ -92,7 +92,7 @@ omep.display_heatmap(res['Mconv7_stage2_L2'], overlay_img=img_orig, statistics=F
 ```python
 import openvino_model_experiment_package as omep
 import cv2
-model = 'dbface-vga/dbface'
+model = 'dbface-vga/dbface.xml'
 ie, net, exenet, inblobs, outblobs, inshapes, outshapes = omep.load_IR_model(model)
 img_orig = cv2.imread('selfie.jpg')
 res = omep.infer_ocv_image(exenet, img_orig, inblobs[0]) # Inference
